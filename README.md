@@ -13,7 +13,12 @@ A userscript and Chrome extension for WebAssign. When you press Submit Answer or
 
 ## Install
 
-Pick one. Don't use both at once, or every submit runs twice.
+Pick one method; they do the same thing. I prefer the userscript, but you can install it as a Chrome extension if you'd like.
+
+### Userscript
+
+1. Install a userscript manager such as [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
+2. Open `webassign-no-reload.user.js` in this repo and click **Raw**. Your userscript manager will offer to install it.
 
 ### Chrome extension (works on Chromebooks)
 
@@ -23,11 +28,6 @@ Pick one. Don't use both at once, or every submit runs twice.
 4. Click **Load unpacked** and pick the unzipped folder.
 
 To update, download the ZIP again, replace the old folder, and click the reload arrow on the extension's card. After changing a setting in the script, click that reload arrow too.
-
-### Userscript
-
-1. Install a userscript manager such as [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
-2. Open `webassign-no-reload.user.js` in this repo and click **Raw**. Your userscript manager will offer to install it.
 
 ## Settings
 
