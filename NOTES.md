@@ -15,4 +15,4 @@ No shared code. Checked `src/script.js` on 2026-09-23.
 * **Live math preview.** As you type, it loads WebAssign's own renderer into an image under the answer box: `/cgi-perl/symimage.cgi?size=4&expr=<escaped answer>`. It escapes the answer with `escape()` and then turns `+` into `%2B`. The box to hook is the input just before each `a.smPreview` link.
 * **Hide the "Enter ..." tooltips** under text fields.
 
-**If both run at once:** both listen for Enter, so one press might submit twice. Untested.
+**Not compatible.** Don't run both at once. They both take over Enter, focus, and scrolling, and will fight each other (for example, one Enter press can submit twice).
