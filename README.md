@@ -8,6 +8,7 @@ A userscript for WebAssign. When you press Submit Answer or Save on one question
 * **Tutorials too.** Tutorial steps update without a reload as well.
 * **Enter submits.** Pressing Enter in an answer box submits that question. Shift+Enter still adds a new line.
 * **Scroll back.** If something does need a full reload, such as Submit Assignment, the page jumps straight back to the question you were on.
+* **Math Pad search.** A search box in the Math Pad header finds any symbol across every tab. Type a name like pi, sqrt, theta, or ohm, then click a result or press Enter to insert it.
 * **Autofocus next** (off by default). After a correct answer, the cursor moves to the next empty answer box.
 
 ## Install
@@ -25,6 +26,7 @@ Each feature has a switch at the top of the script. Set it to `true` or `false`:
 | `AUTOFOCUS_NEXT` | `false` | Jump to the next empty box after a correct answer |
 | `SCROLL_BACK` | `true` | Return to your question after any full reload |
 | `NO_RELOAD_TUTORIALS` | `true` | Update tutorial steps without a reload |
+| `PAD_SEARCH` | `true` | Add a symbol search box to the Math Pad |
 
 If a tutorial behaves strangely, set `NO_RELOAD_TUTORIALS` to `false`. Tutorials will then reload normally, and scroll back still keeps your place.
 

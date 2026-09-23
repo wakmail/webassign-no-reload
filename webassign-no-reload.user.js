@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WebAssign No-Reload Submit
 // @namespace    wakmail.webassign
-// @version      2.0
+// @version      2.2
 // @description  Per-question Submit/Save without reloading. Patches only the changed parts (marks, score, attempts).
 // @match        https://www.webassign.net/web/Student/Assignment-Responses/*
 // @run-at       document-idle
@@ -33,6 +33,12 @@ const SCROLL_BACK = true;
 // tutorials then reload normally (SCROLL_BACK still keeps your place).
 // true = on, false = off
 const NO_RELOAD_TUTORIALS = true;
+
+// PAD_SEARCH: adds a search box to the Math Pad header. Type a name (pi, sqrt, theta,
+// ohm, hbar...), then click a result or press Enter to insert it. Searches every tab
+// (Operations, Relations, Other, Trig, Greek, Vectors) at once. Arrow keys move, Esc clears.
+// true = on, false = off
+const PAD_SEARCH = true;
 // ============================================
 
 (function () {
@@ -131,6 +137,144 @@ const NO_RELOAD_TUTORIALS = true;
       e.stopPropagation();
       btn.click(); // goes through WebAssign's normal flow, then the no-reload hook
     }, true);
+  }
+
+  // ---------- Math Pad search ----------
+  // Extra search words -> text that appears in the pad button's tooltip
+  const PAD_ALIASES = {
+    sqrt: 'square root', root: 'root', abs: 'vertical bars', absolute: 'vertical bars',
+    power: 'superscript', exponent: 'superscript', '^': 'superscript', squared: 'superscript',
+    sub: 'subscript', '_': 'subscript', frac: 'fraction', divide: 'fraction', over: 'fraction', '/': 'fraction',
+    ln: 'natural logarithm', log: 'logarithm', exp: 'exponential', e: 'exponential',
+    inf: 'infinity', hbar: 'h bar', planck: 'h bar', emf: 'emf',
+    '!=': 'not equal', '<=': 'less-than or equal', '>=': 'greater-than or equal',
+    '<': 'less-than sign', '>': 'greater-than sign', '=': 'equals', '+': 'plus', '-': 'minus',
+    x: 'multiplication', '*': 'multiplication', times: 'multiplication', cross: 'multiplication',
+    dne: 'does not exist', none: 'no solution', parens: 'parentheses', '(': 'parentheses',
+    brackets: 'square brackets', '[': 'square brackets', braces: 'curly brackets', '{': 'curly brackets',
+    arrow: 'vector', hat: 'vector', mag: 'vertical bars', magnitude: 'vertical bars',
+    ohm: 'omega', ohms: 'omega', micro: 'mu', wavelength: 'lambda', angle: 'theta',
+  };
+
+  function padSearchSetup(ov) {
+    if (ov.querySelector('.wa-pad-search')) return;
+    const header = ov.querySelector('.mathtype-overlay-header');
+    const actions = ov.querySelector('.mathtype-overlay-actions');
+    if (!header || !actions) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'wa-pad-search';
+    wrap.style.cssText = 'flex:1;margin:0 12px;position:relative;min-width:0;';
+    const input = document.createElement('input');
+    input.type = 'search';
+    input.placeholder = 'Search symbols (pi, sqrt, theta...)';
+    input.style.cssText = 'width:100%;box-sizing:border-box;padding:5px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.95);color:#222;font:14px sans-serif;';
+    const list = document.createElement('div');
+    list.style.cssText = 'display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;max-height:260px;overflow:auto;background:#fff;border:1px solid #ccc;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.2);z-index:99999;';
+    wrap.append(input, list);
+    header.insertBefore(wrap, actions);
+    if (getComputedStyle(header).display !== 'flex') header.style.display = 'flex';
+    header.style.alignItems = 'center';
+
+    const tabs = () => [...ov.querySelectorAll('button.wrs_textTab')];
+    const panels = () => [...ov.querySelectorAll('.wrs_panelContainer > *')];
+
+    function allButtons() {
+      const out = [];
+      panels().forEach((p, i) => p.querySelectorAll('button.wrs_imageContainer').forEach((b) => {
+        out.push({ b, tab: i, name: (b.title || b.getAttribute('aria-label') || '').replace(/\s*\(.*\)$/, '') });
+      }));
+      return out;
+    }
+
+    function matches(q) {
+      q = q.trim().toLowerCase();
+      if (!q) return [];
+      const alias = Object.keys(PAD_ALIASES).filter((k) => k === q || (q.length > 1 && k.startsWith(q))).map((k) => PAD_ALIASES[k]);
+      const scored = [];
+      for (const it of allButtons()) {
+        const n = it.name.toLowerCase();
+        let s = -1;
+        if (n === q) s = 0;
+        else if (n.split(/\s+/).some((w) => w.startsWith(q))) s = 1;
+        else if (n.includes(q)) s = 2;
+        else if (alias.some((a) => n.includes(a))) s = 3;
+        if (s >= 0) scored.push({ ...it, s });
+      }
+      return scored.sort((a, b) => a.s - b.s).slice(0, 12);
+    }
+
+    function press(it) {
+      const t = tabs()[it.tab];
+      if (t && !t.classList.contains('wrs_selected')) t.click();
+      setTimeout(() => {
+        for (const type of ['mousedown', 'mouseup', 'click']) {
+          it.b.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
+        }
+        input.value = '';
+        render();
+        const fe = ov.querySelector('.wrs_focusElement');
+        if (fe) fe.focus();
+      }, 30);
+    }
+
+    let results = [];
+    let sel = 0;
+    function render() {
+      results = matches(input.value);
+      sel = 0;
+      list.innerHTML = '';
+      if (!results.length) {
+        list.style.display = input.value.trim() ? 'block' : 'none';
+        if (input.value.trim()) list.innerHTML = '<div style="padding:8px 10px;color:#777;font:13px sans-serif">Not on this pad</div>';
+        return;
+      }
+      results.forEach((it, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:6px 10px;cursor:pointer;font:13px sans-serif;color:#222;';
+        const img = it.b.querySelector('img');
+        if (img) {
+          const c = img.cloneNode();
+          c.style.cssText = 'width:22px;height:22px;object-fit:contain;';
+          row.append(c);
+        }
+        const tabName = tabs()[it.tab] ? tabs()[it.tab].textContent.trim() : '';
+        row.append(document.createTextNode(it.name));
+        const tag = document.createElement('span');
+        tag.textContent = tabName;
+        tag.style.cssText = 'margin-left:auto;color:#999;font-size:11px;';
+        row.append(tag);
+        row.addEventListener('mousedown', (e) => { e.preventDefault(); press(it); });
+        row.addEventListener('mouseenter', () => { sel = i; paint(); });
+        list.append(row);
+      });
+      list.style.display = 'block';
+      paint();
+    }
+    function paint() {
+      [...list.children].forEach((r, i) => (r.style.background = i === sel ? '#e8f0fb' : ''));
+    }
+
+    input.addEventListener('input', render);
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation(); // keep the pad editor from grabbing keys
+      if (e.key === 'ArrowDown') { sel = Math.min(sel + 1, results.length - 1); paint(); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { sel = Math.max(sel - 1, 0); paint(); e.preventDefault(); }
+      else if (e.key === 'Enter') { if (results[sel]) press(results[sel]); e.preventDefault(); }
+      else if (e.key === 'Escape') { input.value = ''; render(); e.preventDefault(); }
+    });
+    ['keyup', 'keypress'].forEach((t) => input.addEventListener(t, (e) => e.stopPropagation()));
+    input.addEventListener('blur', () => setTimeout(() => (list.style.display = 'none'), 150));
+    input.addEventListener('focus', render);
+  }
+
+  if (PAD_SEARCH) {
+    const check = () => {
+      const ov = document.getElementById('mathtype-overlay');
+      if (ov) padSearchSetup(ov);
+    };
+    new MutationObserver(check).observe(document.body, { childList: true });
+    check();
   }
 
   // ---------- patching ----------
