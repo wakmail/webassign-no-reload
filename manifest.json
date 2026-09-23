@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "WebAssign No Reload",
+  "version": "2.2",
+  "description": "Submit WebAssign answers without reloading the page.",
+  "content_scripts": [
+    {
+      "matches": ["https://www.webassign.net/web/Student/Assignment-Responses/*"],
+      "js": ["webassign-no-reload.user.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    }
+  ]
+}

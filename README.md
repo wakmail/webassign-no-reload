@@ -1,6 +1,6 @@
 # webassign-no-reload
 
-A userscript for WebAssign. When you press Submit Answer or Save on one question, the page no longer reloads. The script sends the answer in the background and updates only what changed: the marks, the score, and the attempt count. You keep your place on the page.
+A userscript and Chrome extension for WebAssign. When you press Submit Answer or Save on one question, the page no longer reloads. The script sends the answer in the background and updates only what changed: the marks, the score, and the attempt count. You keep your place on the page.
 
 ## Features
 
@@ -12,6 +12,19 @@ A userscript for WebAssign. When you press Submit Answer or Save on one question
 * **Autofocus next** (off by default). After a correct answer, the cursor moves to the next empty answer box.
 
 ## Install
+
+Pick one. Don't use both at once, or every submit runs twice.
+
+### Chrome extension (works on Chromebooks)
+
+1. On this repo's GitHub page, click **Code**, then **Download ZIP**.
+2. Unzip it. On a Chromebook, open the ZIP in the Files app and copy the folder inside to My files.
+3. Go to `chrome://extensions` and turn on **Developer mode** (top right).
+4. Click **Load unpacked** and pick the unzipped folder.
+
+To update, download the ZIP again, replace the old folder, and click the reload arrow on the extension's card. After changing a setting in the script, click that reload arrow too.
+
+### Userscript
 
 1. Install a userscript manager such as [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
 2. Open `webassign-no-reload.user.js` in this repo and click **Raw**. Your userscript manager will offer to install it.
@@ -29,6 +42,10 @@ Each feature has a switch at the top of the script. Set it to `true` or `false`:
 | `PAD_SEARCH` | `true` | Add a symbol search box to the Math Pad |
 
 If a tutorial behaves strangely, set `NO_RELOAD_TUTORIALS` to `false`. Tutorials will then reload normally, and scroll back still keeps your place.
+
+## Releasing a new version
+
+Bump the version in both places so they match: `@version` at the top of the script and `"version"` in `manifest.json`.
 
 ## Safety
 
